@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# CHeck if datasets is there
+mkdir datasets
+
 if [ "$1" != "mnist" ] && [ "$1" != "fashion" ]; then
     echo "Usage: $0 [mnist|fashion]"
     exit 1
@@ -12,7 +15,7 @@ if [ "$1" = "mnist" ]; then
         curl -L -o ./datasets/mnist-dataset.zip \
           https://www.kaggle.com/api/v1/datasets/download/hojjatk/mnist-dataset
         unzip ./datasets/mnist-dataset.zip -d ./datasets/mnist
-        rm ./datasets/mnist-dataset.zip
+        rm ./datasets/mnist-dataset.zip || true
     fi
 fi
 
