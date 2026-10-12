@@ -1,4 +1,4 @@
-#include "benchmark.h"
+#include "bench.h"
 #define MATRIX_IMPLEMENTATION
 #include "../matrix.h"
 

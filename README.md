@@ -60,6 +60,7 @@ Epoch 4: 82.330000%
 
 - The output field in the matrix multiplication does not need to be a reference
 - I dont like the bubbling up mechanic of errors anymore, combine with some logging mechanic
+- I am not sure about the header only style
 
 ## Running
 
