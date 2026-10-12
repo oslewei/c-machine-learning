@@ -3,5 +3,6 @@ mnist-dataset.zip
 main
 test
 cblas
+bench
 
 vgcore.*
