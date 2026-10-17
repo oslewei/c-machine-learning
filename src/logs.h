@@ -12,7 +12,7 @@
                 LOG(fmt, ##__VA_ARGS__);\
                 abort();\
             }\
-        } while (0)
+        } while (0);
 
 #else
 

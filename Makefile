@@ -4,6 +4,8 @@ SRC_FILES = main.c arena.h neuralnetwork.h matrix.h
 SRCS = $(patsubst %,src/%,$(SRC_FILES))
 BENCH_FILES = src/benchmarks/bench.c src/benchmarks/bench.h
 
+TESTS = src/bem
+
 run: build-main
 	./main
 
