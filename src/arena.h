@@ -28,7 +28,7 @@ void *arenaAlloc(Arena *arena, size_t size);
 void arenaDestroy(Arena *arena);
 void arenaReset(Arena *arena);
 
-#define ARENA_IMPLEMENTATION
+// #define ARENA_IMPLEMENTATION
 #ifdef ARENA_IMPLEMENTATION
 
 // returns NULL on error
@@ -57,6 +57,8 @@ Arena arenaCreate() {
 
 // Not zero initialized
 void *arenaAlloc(Arena *arena, size_t size) {
+    // uses the alignof function maybe just keep the uintptr_t buffer
+    // works for now
     size_t align = alignof(max_align_t);
 
     uintptr_t current = (uintptr_t)(arena->end->data + arena->end->len);
