@@ -110,5 +110,3 @@ void arenaReset(Arena *arena) {
 }
 
 #endif
-
-#endif

@@ -3,9 +3,18 @@
 #include "../matrix.h"
 
 int main() {
+    Matrix matA, matB, matC;
     BENCH("create matrix", {
-        Matrix mat = matCreate(1000, 1000);
-        matZero(&mat);
-        matDestroy(&mat);
+        matA = matCreate(1000, 1000);
     });
+    matB = matCreate(1000, 1000);
+    matC = matCreate(1000, 1000);
+
+    BENCH ("multiply matrix", {
+        matMul(&matC, matA, matB);
+    });
+
+    matDestroy(&matA);
+    matDestroy(&matB);
+    matDestroy(&matC);
 }

@@ -1,11 +1,15 @@
 #ifndef MATRIX_H
 #define MATRIX_H
 
+#ifdef MATRIX_IMPLEMENTATION
+    #define ARENA_IMPLEMENTATION
+#endif
 #include "arena.h"
 #include "logs.h"
+
 typedef struct Matrix {
-    int rows;
-    int cols;
+    int rows, cols;
+    int rstride, cstride;
     float *data;
 } Matrix;
 
@@ -44,11 +48,8 @@ void matDebug(Matrix a);
 #include <math.h>
 #include <string.h>
 
-// zero-initialized
-Matrix matCreate(unsigned int rows, unsigned int cols) {
+Matrix matCreateRaw(float *data, unsigned int rows, unsigned int cols) {
     LOG("Created Matrix of size: (%ud, %ud)", rows, cols);
-    float *data = (float *)calloc(rows*cols, sizeof(float));
-
     if (data == NULL) {
         return (Matrix) {0};
     }
@@ -56,8 +57,16 @@ Matrix matCreate(unsigned int rows, unsigned int cols) {
     return (Matrix){
         .rows = (int)rows,
         .cols = (int)cols,
+        .rstride = 1,
+        .cstride = 1,
         .data = data,
     };
+}
+
+// zero-initialized
+Matrix matCreate(unsigned int rows, unsigned int cols) {
+    float *data = (float *)calloc(rows*cols, sizeof(float));
+    return matCreateRaw(data, rows, cols);
 }
 
 // Add matrix ids
@@ -66,25 +75,19 @@ void matDestroy(Matrix *a) {
     a->data = NULL;
 }
 
+
+Matrix matArenaCreate(Arena *arena, unsigned int rows, unsigned int cols) {
+    float *data = (float *)arenaAlloc(arena, rows*cols*sizeof(float));
+
+    return matCreateRaw(data, rows, cols);
+}
+
+// TODO: maybe do the same abstractin as before
 Matrix matDupe(Matrix a) {
     Matrix ret = matCreate(a.rows, a.cols);
 
     memcpy(ret.data, a.data, a.rows*a.cols*sizeof(float));
     return ret;
-}
-
-Matrix matArenaCreate(Arena *arena, unsigned int rows, unsigned int cols) {
-    float *data = (float *)arenaAlloc(arena, rows*cols*sizeof(float));
-
-    if (data == NULL) {
-        return (Matrix) {0};
-    }
-
-    return (Matrix){
-        .rows = (int)rows,
-        .cols = (int)cols,
-        .data = data,
-    };
 }
 
 Matrix matArenaDupe(Arena *arena, Matrix a) {
@@ -273,8 +276,8 @@ int matSoftMax(Matrix *out, Matrix a) {
 }
 
 void matDebug(Matrix mat) {
-    for (int i = 0; i < mat.rows; i++) {
-        for (int j = 0; j < mat.cols; j++) {
+    for (int i = 0; i < mat.rows; i += mat.rstride) {
+        for (int j = 0; j < mat.cols; j += mat.cstride) {
             printf("%5.1f ", mat.data[i*mat.cols + j]);
         }
         printf("\n");

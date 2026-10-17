@@ -1,4 +1,3 @@
-#include "arena.h"
 #include <time.h>
 #include <math.h>
 #include <stdio.h>
@@ -10,6 +9,8 @@
 
 #define MATRIX_IMPLEMENTATION
 #include "matrix.h"
+#define ARENA_IMPLEMENTATION
+#include "arena.h"
 #include "types.h"
 #include "neuralnetwork.h"
 
@@ -45,53 +46,53 @@ u32 swap32(u32 x) {
 int decodeImages(LabelledImages *labelled_images, const char *images, const char *labels) {
     // read images
     FILE *image_file = fopen(images, "r");
-    
+
     if (fgetc(image_file) != 0) return 0;
     if (fgetc(image_file) != 0) return 0;
-    
+
     u8 type = fgetc(image_file);
     if (type != 0x08) return 0;
     u8 num_dims = fgetc(image_file);
     if (num_dims != 0x03) return 0;
     // printf("type: %d, dimensions: %d\n", type, num_dims);
-    
+
     u32 dimensions[3] = {0};
     fread(dimensions, sizeof(int), 3, image_file);
     for (int i =0; i < 3; i++) {
         dimensions[i] = swap32(dimensions[i]);
     }
-    
+
     // printf("dimensions: (%d, %d, %d)\n", dimensions[0], dimensions[1], dimensions[2]);
-    
+
     labelled_images->images = malloc(dimensions[0]*dimensions[1]*dimensions[2]);
     if (labelled_images->images == NULL) return 0;
     fread(labelled_images->images, 1, dimensions[0]*dimensions[1]*dimensions[2], image_file);
     fclose(image_file);
-    
+
     // read images
     FILE *label_file = fopen(labels, "r");
-    
+
     if (fgetc(label_file) != 0) return 0;
     if (fgetc(label_file) != 0) return 0;
-    
+
     type = fgetc(label_file);
     if (type != 0x08) return 0;
     num_dims = fgetc(label_file);
     if (num_dims != 0x01) return 0;
     // printf("Labels type: %d, dimensions: %d\n", type, num_dims);
-    
+
     u32 label_dimension;
     fread(&label_dimension, sizeof(int), 1, label_file);
     label_dimension = swap32(label_dimension);
-    
+
     // printf("label_dimension: %d\n", label_dimension);
-    
+
     labelled_images->labels = malloc(label_dimension);
     fread(labelled_images->labels, 1, label_dimension, label_file);
     fclose(label_file);
-    
+
     labelled_images->num_images = label_dimension;
-    
+
     return 1;
 }
 
@@ -99,7 +100,7 @@ void freeLabelledImages(LabelledImages images) {
     free(images.images);
     free(images.labels);
 }
- 
+
 void showImage(Image *image) {
     const char options[9] = " .:+=x$#";
     for (int i = 0; i < 28; i++) {
@@ -172,7 +173,7 @@ int main(int argc, char *argv[]) {
             return 1;
         }
     }
-    
+
     // showImage(training_images.images);
     // hyper parameters
     // Epochs
@@ -184,16 +185,16 @@ int main(int argc, char *argv[]) {
     int epochs = 5;
     int batch_size = 64;
     float learning_rate = 0.001;
-    
+
     Arena perm_arena = arenaCreate();
     Arena batch_arena = arenaCreate();
-    
+
     NeuralNetwork network = {0};
     NeuralNetwork gradients = {0};
 
     // just a one layer network with output 10
     nnArenaCreate(&network, &perm_arena, 28*28, 2, 128, 10);
-    
+
     // Xavier init: weights ~ U(-1/sqrt(fan_in), 1/sqrt(fan_in))
     for (int l = 0; l < network.num_layers; l++) {
         Layer *layer = &network.layers[l];
@@ -202,25 +203,24 @@ int main(int argc, char *argv[]) {
             layer->weights.data[i] = ((float)rand() / (float)RAND_MAX * 2.0f - 1.0f) * scale;
         }
     }
-    
+
     // training
     Matrix in = matArenaCreate(&perm_arena, IMAGE_SIZE, 1);
     Matrix out = matArenaCreate(&perm_arena, 10, 1);
     Matrix actual = matArenaCreate(&perm_arena, 10, 1);
     matZero(&actual);
     float accuracies[epochs];
-    
+
     u32 indeces[training_images.num_images];
     for (int i = 0; i < training_images.num_images; i++) {
         indeces[i] = i;
     }
-    
-    
+
     struct timespec start_time, end_time;
     clock_gettime(CLOCK_MONOTONIC, &start_time);
     for (int epoch = 0; epoch < epochs; epoch++) {
         arenaReset(&batch_arena);
-        
+
         shuffleIndeces(indeces, training_images.num_images);
         for (int i = 0; i < (int)training_images.num_images/batch_size; i++) {
             if (i % 100 == 0) {
@@ -241,33 +241,33 @@ int main(int argc, char *argv[]) {
                 for (int k = 0; k < IMAGE_SIZE; k++) {
                     in.data[k] = (float)image->data[k]/255.0;
                 }
-                
+
                 assert(nnForward(&network, &out, in, &batch_arena) == 0);
                 actual.data[label] = 1.0;
                 assert(nnBackward(&network, &batch_gradients, actual, &batch_arena) == 0);
                 actual.data[label] = 0.0;
-                
+
                 nnAddGradients(&gradients, &batch_gradients);
             }
             nnScaleGradients(&gradients, 1.0/batch_size);
-            
+
             nnAddGradientsToNetwork(&network, &gradients, &batch_arena, learning_rate);
             arenaReset(&batch_arena);
         }
         //testing
-        
+
         int total_correct = 0;
         for (int i = 0; i < (int)test_images.num_images; i++) {
             Image *image = test_images.images + i;
             u32 label = test_images.labels[i];
-            
+
             // flattening the image
             for (int j = 0; j < IMAGE_SIZE; j++) {
                 in.data[j] = (float)image->data[j]/255.0;
             }
-            
+
             assert(nnForward(&network, &out, in, &batch_arena) == 0);
-            
+
             u32 max_idx = 0;
             float curr_max = -1.0;
             for (int i = 0; i < 10; i++) {
@@ -284,14 +284,14 @@ int main(int argc, char *argv[]) {
     }
     clock_gettime(CLOCK_MONOTONIC, &end_time);
     printf("Training took %f seconds\n", (float)(end_time.tv_sec - start_time.tv_sec) + (float)(end_time.tv_nsec - start_time.tv_nsec)/1e9);
-    
+
     plotAccuracies(accuracies, epochs);
-    
+
     freeLabelledImages(training_images);
     freeLabelledImages(test_images);
-    
+
     arenaDestroy(&batch_arena);
     arenaDestroy(&perm_arena);
-    
+
     return 0;
 }

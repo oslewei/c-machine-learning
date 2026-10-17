@@ -4,9 +4,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#ifndef DEBUG
+#ifdef DEBUG
 
-    #define LOG(fmt, ...) fprintf(stderr, "[LOG][%s:%d] " fmt, __FILE__, __LINE__, ##__VA_ARGS__)
+    #define LOG(fmt, ...) fprintf(stderr, "[LOG][%s:%d]\n" fmt, __FILE__, __LINE__, ##__VA_ARGS__)
     #define ASSERT(cond, fmt, ...) do {\
             if (!(cond)) {\
                 LOG(fmt, ##__VA_ARGS__);\
