@@ -51,11 +51,6 @@ static inline void run_tests() {
                                     .name = #test_name};                       \
     void test_name(TestContext *ctx)
 
-// #define TEST(test_name) \
-//     for (TestContext ctx = (TestContext){.name = #test_name}; !ctx.stop; \
-//          report_result(&ctx), ctx.stop = true) \
-//         for (bool once = true; once; once = false)
-
 // Expects the condition to be true
 #define EXPECT(condition)                                                      \
     do {                                                                       \
