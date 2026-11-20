@@ -3,6 +3,7 @@ CFLAGS = -pedantic -Wall -g
 SRC_FILES = main.c arena.h neuralnetwork.h matrix.h
 SRCS = $(patsubst %,src/%,$(SRC_FILES))
 BENCH_FILES = benchmarks/bench.c benchmarks/bench.h
+TEST_FILES = tests/test.h tests/test_matrix.c
 
 run: build-main
 	./main
@@ -10,10 +11,13 @@ run: build-main
 train: build-train
 	./train
 
+build-test: $(TEST_FILES)
+	gcc $(CFLAGS) -o test tests/test_matrix.c -lm
+
 build-main: $(SRCS)
 	gcc $(CFLAGS) -fsanitize=address -o main src/main.c -lm
 
-build-test: $(SRCS)
+build-train: $(SRCS)
 	gcc $(CFLAGS) -O3 -ffast-math -march=native -o train src/main.c -lm
 
 build-cblas: $(SRCS)
@@ -26,9 +30,6 @@ leak: $(SRCS)
 	gcc -pedantic -Wall -g -o leak src/main.c -lm
 	valgrind --leak-check=full ./leak
 	rm leak
-
-tests/%.out: tests/%.c
-	gcc $(CFLAGS)
 
 .PHONY: clean leak build-train build-main main train
 clean:
