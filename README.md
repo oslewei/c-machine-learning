@@ -48,6 +48,14 @@ Epoch 4: 82.330000%
 - [x] Arena Allocation
 - [x] OpenBLAS on matMul
 - [x] Momentum
+- [ ] Testing
+  - [x] Unit testing framework
+  - [ ] Unit test the matrix and the neural network and arena
+  - [ ] Test allocator
+  - [ ] Parallel testing
+- [ ] Updated matrix with strides
+- [ ] Generic allocators for heap, stack, arena
+- [ ] Autograd
 - [ ] Adam
 - [ ] Convolutional neural networks
 - [ ] Regularization
