@@ -1,4 +1,4 @@
-CFLAGS = -pedantic -Wall -g
+CFLAGS = -pedantic -Wall -g -Isrc -Itests
 LIBS = -lm
 BUILD = build
 
@@ -7,7 +7,7 @@ SRCS = $(addprefix src/,$(SRC_FILES))
 
 BENCH_FILES = benchmarks/bench.c benchmarks/bench.h
 
-TEST_FILES = tests/test.h tests/test_runner.c tests/test_matrix.c
+TEST_FILES = tests/test.h tests/test_matrix.c
 
 all: build-main
 
@@ -20,6 +20,9 @@ build-main: $(SRCS) | $(BUILD)
 train: build-train
 	./$(BUILD)/train
 
+test: build-test
+	./$(BUILD)/test
+
 build-train: $(SRCS) | $(BUILD)
 	gcc $(CFLAGS) -O3 -ffast-math -march=native -o $(BUILD)/train src/main.c $(LIBS)
 
@@ -29,8 +32,9 @@ build-cblas: $(SRCS) | $(BUILD)
 test: build-test
 	./$(BUILD)/test
 
+# Make this  more dynamic  wht the files
 build-test: $(TEST_FILES) | $(BUILD)
-	gcc $(CFLAGS) -o $(BUILD)/test tests/test_runner.c tests/test_matrix.c $(LIBS)
+	gcc $(CFLAGS) -o $(BUILD)/test tests/test_matrix.c $(LIBS)
 
 build-bench: $(SRCS) $(BENCH_FILES) | $(BUILD)
 	gcc $(CFLAGS) -O3 -march=native -o $(BUILD)/bench benchmarks/bench.c $(LIBS)
@@ -45,4 +49,4 @@ $(BUILD):
 clean:
 	rm -rf $(BUILD)
 
-.PHONY: all run train test leak clean
+.PHONY: all run train test leak clean test
