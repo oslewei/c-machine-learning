@@ -9,7 +9,6 @@
 
 typedef struct Matrix {
     int rows, cols;
-    int rstride, cstride;
     float *data;
 } Matrix;
 
@@ -57,8 +56,6 @@ Matrix matCreateRaw(float *data, unsigned int rows, unsigned int cols) {
     return (Matrix){
         .rows = (int)rows,
         .cols = (int)cols,
-        .rstride = 1,
-        .cstride = 1,
         .data = data,
     };
 }
@@ -276,8 +273,8 @@ int matSoftMax(Matrix *out, Matrix a) {
 }
 
 void matDebug(Matrix mat) {
-    for (int i = 0; i < mat.rows; i += mat.rstride) {
-        for (int j = 0; j < mat.cols; j += mat.cstride) {
+    for (int i = 0; i < mat.rows; i += 1) {
+        for (int j = 0; j < mat.cols; j += 1) {
             printf("%5.1f ", mat.data[i*mat.cols + j]);
         }
         printf("\n");
