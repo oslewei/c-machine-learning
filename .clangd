@@ -1,0 +1,7 @@
+CompileFlags:
+  BuiltinHeaders: Clangd
+  Add:
+    - -xc
+    - -Wall
+    - -I../src
+    - -I./src
