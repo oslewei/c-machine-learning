@@ -1,9 +1,9 @@
 #ifndef TEST_H
 #define TEST_H
 
+#include <math.h>
 #include <stdbool.h>
 #include <stdio.h>
-#include <math.h>
 
 #define COLOR_BOLD "\033[1m"
 #define COLOR_RED COLOR_BOLD "\033[31m"
@@ -11,6 +11,8 @@
 #define COLOR_RESET "\033[0m"
 
 #define EPS 1e-5
+#define ABS(a) (a < 0 ? -a : a)
+#define FLOAT_EQ(a, b) (ABS((a) - (b)) < EPS)
 
 typedef struct TestContext {
     bool failed;
@@ -66,8 +68,5 @@ void run_tests() {
             return;                                                            \
         }                                                                      \
     } while (0);
-
-#define ABS(a) (a < 0 ? -a : a)
-#define FLOAT_EQ(a, b) (ABS((a) - (b)) < EPS)
 
 #endif
