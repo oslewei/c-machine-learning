@@ -84,7 +84,6 @@ void matReLuDerInto(Matrix *out, Matrix a);
 
 void matDebug(Matrix a);
 
-#define MATRIX_IMPLEMENTATION
 #ifdef MATRIX_IMPLEMENTATION
 
 #include <math.h>
@@ -313,7 +312,7 @@ void matDivInto(Matrix *out, Matrix a, Matrix b) {
 }
 
 void matZero(Matrix *a) {
-    ASSERT(a->data == NULL, "a is unallocated");
+    ASSERT(a->data != NULL, "a is unallocated");
     memset(a->data, 0, a->rows * a->cols * sizeof(float));
 }
 
