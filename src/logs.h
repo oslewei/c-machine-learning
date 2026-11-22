@@ -1,6 +1,8 @@
 #ifndef LOGS_H
 #define LOGS_H
 
+#include <stdio.h>
+
 #define ASSERT(cond, fmt, ...) do {\
         if (!(cond)) {\
             LOG(fmt, ##__VA_ARGS__);\
@@ -8,14 +10,6 @@
         }\
     } while (0);
 
-#ifdef DEBUG
-
-    #define LOG(fmt, ...) fprintf(stderr, "[LOG][%s:%d]\n" fmt, __FILE__, __LINE__, ##__VA_ARGS__)
-
-#else
-
-    #define LOG(fmt, ...)
-
-#endif
+#define LOG(fmt, ...) fprintf(stderr, "[LOG]: [%s:%d] " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__)
 
 #endif

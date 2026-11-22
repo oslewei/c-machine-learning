@@ -9,19 +9,25 @@
 #include "arena.h"
 #include "logs.h"
 
+#define EPS 1e-5
+#define ABS(a) (a < 0 ? -a : a)
+#define FLOAT_EQ(a, b) (ABS((a) - (b)) < EPS)
+
 typedef struct Matrix {
     int rows, cols;
     int rs, cs;
     float *data;
 } Matrix;
 
+#define MAT_AT(mat, row, col) (mat).data[(col) * (mat).cs + (row) * (mat).rs]
+
+#define MAT_FOREACH(mat, row, col)                                             \
+    for (int row = 0; row < (mat).rows; row++)                                 \
+        for (int col = 0; col < (mat).cols; col++)
+
 Matrix matCreate(unsigned int rows, unsigned int cols);
 void matDestroy(Matrix *a);
 Matrix matDupe(Matrix a);
-
-#define EPS 1e-5
-#define ABS(a) (a < 0 ? -a : a)
-#define FLOAT_EQ(a, b) (ABS((a) - (b)) < EPS)
 
 // TODO: update
 /// Equal by value
@@ -32,8 +38,7 @@ bool matEq(Matrix a, Matrix b) {
 
     for (int i = 0; i < a.rows; i++) {
         for (int j = 0; j < a.cols; j++) {
-            int idx = i * a.rs + j * a.rs;
-            if (!FLOAT_EQ(a.data[idx], b.data[idx])) {
+            if (!FLOAT_EQ(MAT_AT(a, i, j), MAT_AT(b, i, j))) {
                 return false;
             }
         }
@@ -82,7 +87,7 @@ void matReLuDerInto(Matrix *out, Matrix a);
 // Utils --------------
 void matDebug(Matrix a);
 
-// #define MATRIX_IMPLEMENTATION
+#define MATRIX_IMPLEMENTATION
 #ifdef MATRIX_IMPLEMENTATION
 
 #include <math.h>
@@ -144,10 +149,8 @@ Matrix matPack(Arena *arena, Matrix a) {
     // so its not packed or in the standard way for cblas specifically
     if (a.cs != 1 || a.rs != a.cols) {
         Matrix out = matArenaCreate(arena, a.rows, a.cols);
-        for (int i = 0; i < a.rows; i++) {
-            for (int j = 0; j < a.cols; j++) {
-                out.data[i * out.rs + j * out.cs] = a.data[i * a.rs + j * a.cs];
-            }
+        MAT_FOREACH(a, row, col) {
+            MAT_AT(out, row, col) = MAT_AT(a, row, col);
         }
         return out;
     }
@@ -199,13 +202,10 @@ void matMulInto(Matrix *out, Matrix a, Matrix b) {
     ASSERT(out->rows == a.rows && out->cols == b.cols,
            "the out size does not match");
 
-    for (int i = 0; i < a.rows; i++) {
-        for (int j = 0; j < b.cols; j++) {
-            out->data[i * out->cols + j] = 0;
-            for (int k = 0; k < a.cols; k++) {
-                out->data[i * out->cols + j] +=
-                    a.data[i * a.rs + k * a.cs] * b.data[k * b.rs + j * b.cs];
-            }
+    MAT_FOREACH(a, i, j) {
+        MAT_AT(*out, i, j) = 0;
+        for (int k = 0; k < a.cols; k++) {
+            MAT_AT(*out, i, j) += MAT_AT(a, i, k) * MAT_AT(b, k, j);
         }
     }
 }
@@ -224,9 +224,7 @@ void matScaleInto(Matrix *out, Matrix a, float b) {
     ASSERT(out->cols == a.cols && out->rows == a.rows,
            "out size does not match a size");
 
-    for (int i = 0; i < a.cols * a.rows; i++) {
-        out->data[i] = b * a.data[i];
-    }
+    MAT_FOREACH(*out, i, j) { MAT_AT(*out, i, j) = b * MAT_AT(a, i, j); }
 }
 
 Matrix matAdd(Arena *arena, Matrix a, Matrix b) {
@@ -243,8 +241,8 @@ void matAddInto(Matrix *out, Matrix a, Matrix b) {
     ASSERT(b.cols == a.cols && b.rows == a.rows,
            "b size does not match a size");
 
-    for (int i = 0; i < a.rows * a.cols; i++) {
-        out->data[i] = a.data[i] + b.data[i];
+    MAT_FOREACH(a, row, col) {
+        MAT_AT(*out, row, col) = MAT_AT(a, row, col) + MAT_AT(b, row, col);
     }
 }
 
@@ -261,8 +259,9 @@ void matSubInto(Matrix *out, Matrix a, Matrix b) {
            "out size does not match a size");
     ASSERT(b.cols == a.cols && b.rows == a.rows,
            "b size does not match a size");
-    for (int i = 0; i < a.rows * a.cols; i++) {
-        out->data[i] = a.data[i] - b.data[i];
+
+    MAT_FOREACH(a, row, col) {
+        MAT_AT(*out, row, col) = MAT_AT(a, row, col) - MAT_AT(b, row, col);
     }
 }
 
@@ -280,14 +279,15 @@ Matrix matProduct(Arena *arena, Matrix a, Matrix b) {
     return out;
 }
 
+// TODO: Test
 void matProductInto(Matrix *out, Matrix a, Matrix b) {
     ASSERT(out->cols == a.cols && out->rows == a.rows,
            "out size does not match a size");
     ASSERT(b.cols == a.cols && b.rows == a.rows,
            "b size does not match a size");
 
-    for (int i = 0; i < a.rows * a.cols; i++) {
-        out->data[i] = a.data[i] * b.data[i];
+    MAT_FOREACH(a, row, col) {
+        MAT_AT(*out, row, col) = MAT_AT(a, row, col) * MAT_AT(b, row, col);
     }
 }
 
@@ -305,8 +305,8 @@ void matDivInto(Matrix *out, Matrix a, Matrix b) {
     ASSERT(b.cols == a.cols && b.rows == a.rows,
            "b size does not match a size");
 
-    for (int i = 0; i < a.rows * a.cols; i++) {
-        out->data[i] = a.data[i] / b.data[i];
+    MAT_FOREACH(a, row, col) {
+        MAT_AT(*out, row, col) = MAT_AT(a, row, col) / MAT_AT(b, row, col);
     }
 }
 
@@ -327,8 +327,8 @@ void matSqrtInto(Matrix *out, Matrix a) {
     ASSERT(out->cols == a.cols && out->rows == a.rows,
            "out size does not match a size");
 
-    for (int i = 0; i < a.rows * a.cols; i++) {
-        out->data[i] = sqrtf(a.data[i]);
+    MAT_FOREACH(a, row, col) {
+        MAT_AT(*out, row, col) = sqrtf(MAT_AT(a, row, col));
     }
 }
 
@@ -344,8 +344,8 @@ void matAddScalarInto(Matrix *out, Matrix a, float r) {
     ASSERT(out->cols == a.cols && out->rows == a.rows,
            "out size does not match a size");
 
-    for (int i = 0; i < a.rows * a.cols; i++) {
-        out->data[i] = a.data[i] + r;
+    MAT_FOREACH(a, row, col) {
+        MAT_AT(*out, row, col) = MAT_AT(a, row, col) + r;
     }
 }
 
@@ -361,8 +361,9 @@ void matReLuInto(Matrix *out, Matrix a) {
     ASSERT(out->cols == a.cols && out->rows == a.rows,
            "out size does not match a size");
 
-    for (int i = 0; i < a.rows * a.cols; i++) {
-        out->data[i] = (a.data[i] > 0) ? a.data[i] : 0;
+    MAT_FOREACH(a, row, col) {
+        float v = MAT_AT(a, row, col);
+        MAT_AT(*out, row, col) = (v > 0) ? v : 0;
     }
 }
 
@@ -378,8 +379,9 @@ void matReLuDerInto(Matrix *out, Matrix a) {
     ASSERT(out->cols == a.cols && out->rows == a.rows,
            "out size does not match a size");
 
-    for (int i = 0; i < a.rows * a.cols; i++) {
-        out->data[i] = (a.data[i] > 0) ? 1 : 0;
+    MAT_FOREACH(a, row, col) {
+        float v = MAT_AT(a, row, col);
+        MAT_AT(*out, row, col) = (v > 0) ? 1 : 0;
     }
 }
 
@@ -391,25 +393,28 @@ Matrix matSoftMax(Arena *arena, Matrix a) {
     return out;
 }
 
+// TODO: Test
 void matSoftMaxInto(Matrix *out, Matrix a) {
     ASSERT(out->cols == a.cols && out->rows == a.rows,
            "out size does not match a size");
 
-    float max_val = a.data[0];
-    for (int i = 1; i < a.rows * a.cols; i++) {
-        if (a.data[i] > max_val)
-            max_val = a.data[i];
+    float max_val = MAT_AT(a, 0, 0);
+    MAT_FOREACH(a, row, col) {
+        float v = MAT_AT(a, row, col);
+        if (v > max_val) {
+            max_val = v;
+        }
     }
 
     float total = 0.0;
-    for (int i = 0; i < a.rows * a.cols; i++) {
-        float curr = exp(a.data[i] - max_val);
-        out->data[i] = curr;
+    MAT_FOREACH(a, row, col) {
+        float curr = exp(MAT_AT(a, row, col) - max_val);
+        MAT_AT(*out, row, col) = curr;
         total += curr;
     }
 
-    for (int i = 0; i < a.rows * a.cols; i++) {
-        out->data[i] /= total;
+    MAT_FOREACH(*out, row, col) {
+        MAT_AT(*out, row, col) /= total;
     }
 }
 
