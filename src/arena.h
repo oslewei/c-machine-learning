@@ -1,4 +1,5 @@
 /// In the syel of tsodings arena, but using char data[] instead of uintptr_t
+/// Inspired from the zig arena as well
 #ifndef ARENA_H
 #define ARENA_H
 

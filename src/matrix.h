@@ -46,7 +46,6 @@ Matrix matArenaDupe(Arena *arena, Matrix a);
 void matZero(Matrix *a);
 
 // Views -------------
-
 Matrix matTransposeView(Matrix a);
 
 // Allocating -----------
@@ -76,14 +75,14 @@ void matProductInto(Matrix *out, Matrix a, Matrix b);
 void matDivInto(Matrix *out, Matrix a, Matrix b);
 void matSqrtInto(Matrix *out, Matrix a);
 void matAddScalarInto(Matrix *out, Matrix a, float r);
-
 void matSoftMaxInto(Matrix *out, Matrix a);
-
 void matReLuInto(Matrix *out, Matrix a);
 void matReLuDerInto(Matrix *out, Matrix a);
 
+// Utils --------------
 void matDebug(Matrix a);
 
+// #define MATRIX_IMPLEMENTATION
 #ifdef MATRIX_IMPLEMENTATION
 
 #include <math.h>
