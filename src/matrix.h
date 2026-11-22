@@ -43,28 +43,46 @@ bool matEq(Matrix a, Matrix b) {
 
 Matrix matArenaCreate(Arena *arena, unsigned int rows, unsigned int cols);
 Matrix matArenaDupe(Arena *arena, Matrix a);
+void matZero(Matrix *a);
 
-int matMul(Matrix *out, Matrix a, Matrix b);
-int matScale(Matrix *out, Matrix a, float r);
-int matAdd(Matrix *out, Matrix a, Matrix b);
-int matSub(Matrix *out, Matrix a, Matrix b);
-int matTranspose(Matrix *out, Matrix a);
+// Allocating -----------
+Matrix matMul(Arena *arena, Matrix a, Matrix b);
+Matrix matScale(Arena *arena, Matrix a, float r);
+Matrix matAdd(Arena *arena, Matrix a, Matrix b);
+Matrix matSub(Arena *arena, Matrix a, Matrix b);
+Matrix matTranspose(Arena *arena, Matrix a);
 // [a, b]prod[d, e] = [a*d, b*e]
-int matProduct(Matrix *out, Matrix a, Matrix b);
-int matDiv(Matrix *out, Matrix a, Matrix b);
-int matZero(Matrix *a);
-int matSqrt(Matrix *out, Matrix a);
-int matAddScalar(Matrix *out, Matrix a, float r);
+Matrix matProduct(Arena *arena, Matrix a, Matrix b);
+Matrix matDiv(Arena *arena, Matrix a, Matrix b);
+Matrix matSqrt(Arena *arena, Matrix a);
+Matrix matAddScalar(Arena *arena, Matrix a, float r);
 
 // not sure how to implement it yet
-int matSoftMax(Matrix *out, Matrix a);
+Matrix matSoftMax(Arena *arena, Matrix a);
 
-int matReLu(Matrix *out, Matrix a);
-int matReLuDer(Matrix *out, Matrix a);
+Matrix matReLu(Arena *arena, Matrix a);
+Matrix matReLuDer(Arena *arena, Matrix a);
+
+// Non-allocating -----------
+void matMulInto(Matrix *out, Matrix a, Matrix b);
+void matScaleInto(Matrix *out, Matrix a, float r);
+void matAddInto(Matrix *out, Matrix a, Matrix b);
+void matSubInto(Matrix *out, Matrix a, Matrix b);
+void matTransposeInto(Matrix *out, Matrix a);
+// [a, b]prod[d, e] = [a*d, b*e]
+void matProductInto(Matrix *out, Matrix a, Matrix b);
+void matDivInto(Matrix *out, Matrix a, Matrix b);
+void matSqrtInto(Matrix *out, Matrix a);
+void matAddScalarInto(Matrix *out, Matrix a, float r);
+
+void matSoftMaxInto(Matrix *out, Matrix a);
+
+void matReLuInto(Matrix *out, Matrix a);
+void matReLuDerInto(Matrix *out, Matrix a);
 
 void matDebug(Matrix a);
 
-// #define MATRIX_IMPLEMENTATION
+#define MATRIX_IMPLEMENTATION
 #ifdef MATRIX_IMPLEMENTATION
 
 #include <math.h>
@@ -127,7 +145,7 @@ Matrix matArenaDupe(Arena *arena, Matrix a) {
 #include <cblas.h>
 
 // using cblas
-int matMul(Matrix *out, Matrix a, Matrix b) {
+void matMulInto(Matrix *out, Matrix a, Matrix b) {
     ASSERT(a.cols == b.rows, "a.cols and b.rows do not match");
     ASSERT(out->rows == a.rows && out->cols == b.cols,
            "the out size does not match");
@@ -135,13 +153,12 @@ int matMul(Matrix *out, Matrix a, Matrix b) {
     cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, a.rows, b.cols,
                 a.cols, 1.0f, a.data, a.cols, b.data, b.cols, 1.0, out->data,
                 out->cols);
-    return 0;
 }
 
 #else
 
 // out should be initialized to the right size
-int matMul(Matrix *out, Matrix a, Matrix b) {
+void matMulInto(Matrix *out, Matrix a, Matrix b) {
     ASSERT(a.cols == b.rows, "a.cols and b.rows do not match");
     ASSERT(out->rows == a.rows && out->cols == b.cols,
            "the out size does not match");
@@ -155,24 +172,20 @@ int matMul(Matrix *out, Matrix a, Matrix b) {
             }
         }
     }
-
-    return 0;
 }
 
 #endif // USE_OPENBLAS
 
-int matScale(Matrix *out, Matrix a, float b) {
+void matScaleInto(Matrix *out, Matrix a, float b) {
     ASSERT(out->cols == a.cols && out->rows == a.rows,
            "out size does not match a size");
 
     for (int i = 0; i < a.cols * a.rows; i++) {
         out->data[i] = b * a.data[i];
     }
-
-    return 0;
 }
 
-int matAdd(Matrix *out, Matrix a, Matrix b) {
+void matAddInto(Matrix *out, Matrix a, Matrix b) {
     ASSERT(out->cols == a.cols && out->rows == a.rows,
            "out size does not match a size");
     ASSERT(b.cols == a.cols && b.rows == a.rows,
@@ -181,11 +194,9 @@ int matAdd(Matrix *out, Matrix a, Matrix b) {
     for (int i = 0; i < a.rows * a.cols; i++) {
         out->data[i] = a.data[i] + b.data[i];
     }
-
-    return 0;
 }
 
-int matSub(Matrix *out, Matrix a, Matrix b) {
+void matSubInto(Matrix *out, Matrix a, Matrix b) {
     ASSERT(out->cols == a.cols && out->rows == a.rows,
            "out size does not match a size");
     ASSERT(b.cols == a.cols && b.rows == a.rows,
@@ -193,21 +204,18 @@ int matSub(Matrix *out, Matrix a, Matrix b) {
     for (int i = 0; i < a.rows * a.cols; i++) {
         out->data[i] = a.data[i] - b.data[i];
     }
-    return 0;
 }
 
-int matTranspose(Matrix *out, Matrix a) {
+void matTransposeInto(Matrix *out, Matrix a) {
     ASSERT(out->cols == a.rows && out->rows == a.cols,
            "out size does not match a size");
 
     out->cs = a.rs;
     out->rs = a.cs;
     out-> data = a.data;
-
-    return 0;
 }
 
-int matProduct(Matrix *out, Matrix a, Matrix b) {
+void matProductInto(Matrix *out, Matrix a, Matrix b) {
     ASSERT(out->cols == a.cols && out->rows == a.rows,
            "out size does not match a size");
     ASSERT(b.cols == a.cols && b.rows == a.rows,
@@ -216,11 +224,9 @@ int matProduct(Matrix *out, Matrix a, Matrix b) {
     for (int i = 0; i < a.rows * a.cols; i++) {
         out->data[i] = a.data[i] * b.data[i];
     }
-
-    return 0;
 }
 
-int matDiv(Matrix *out, Matrix a, Matrix b) {
+void matDivInto(Matrix *out, Matrix a, Matrix b) {
     ASSERT(out->cols == a.cols && out->rows == a.rows,
            "out size does not match a size");
     ASSERT(b.cols == a.cols && b.rows == a.rows,
@@ -229,61 +235,51 @@ int matDiv(Matrix *out, Matrix a, Matrix b) {
     for (int i = 0; i < a.rows * a.cols; i++) {
         out->data[i] = a.data[i] / b.data[i];
     }
-
-    return 0;
 }
 
-int matZero(Matrix *a) {
-    if (a->data == NULL)
-        return 1;
+void matZero(Matrix *a) {
+    ASSERT(a->data == NULL,
+           "a is unallocated");
     memset(a->data, 0, a->rows * a->cols * sizeof(float));
-    return 0;
 }
 
-int matSqrt(Matrix *out, Matrix a) {
+void matSqrtInto(Matrix *out, Matrix a) {
     ASSERT(out->cols == a.cols && out->rows == a.rows,
            "out size does not match a size");
 
     for (int i = 0; i < a.rows * a.cols; i++) {
         out->data[i] = sqrtf(a.data[i]);
     }
-
-    return 0;
 }
 
-int matAddScalar(Matrix *out, Matrix a, float r) {
+void matAddScalarInto(Matrix *out, Matrix a, float r) {
     ASSERT(out->cols == a.cols && out->rows == a.rows,
            "out size does not match a size");
 
     for (int i = 0; i < a.rows * a.cols; i++) {
         out->data[i] = a.data[i] + r;
     }
-
-    return 0;
 }
 
-int matReLu(Matrix *out, Matrix a) {
+void matReLuInto(Matrix *out, Matrix a) {
     ASSERT(out->cols == a.cols && out->rows == a.rows,
            "out size does not match a size");
 
     for (int i = 0; i < a.rows * a.cols; i++) {
         out->data[i] = (a.data[i] > 0) ? a.data[i] : 0;
     }
-    return 0;
 }
 
-int matReLuDer(Matrix *out, Matrix a) {
+void matReLuDerInto(Matrix *out, Matrix a) {
     ASSERT(out->cols == a.cols && out->rows == a.rows,
            "out size does not match a size");
 
     for (int i = 0; i < a.rows * a.cols; i++) {
         out->data[i] = (a.data[i] > 0) ? 1 : 0;
     }
-
-    return 0;
 }
 
-int matSoftMax(Matrix *out, Matrix a) {
+void matSoftMaxInto(Matrix *out, Matrix a) {
     ASSERT(out->cols == a.cols && out->rows == a.rows,
            "out size does not match a size");
 
@@ -303,8 +299,6 @@ int matSoftMax(Matrix *out, Matrix a) {
     for (int i = 0; i < a.rows * a.cols; i++) {
         out->data[i] /= total;
     }
-
-    return 0;
 }
 
 void matDebug(Matrix mat) {
