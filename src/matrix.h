@@ -11,6 +11,7 @@
 
 typedef struct Matrix {
     int rows, cols;
+    int rs, cs;
     float *data;
 } Matrix;
 
@@ -24,14 +25,17 @@ Matrix matDupe(Matrix a);
 
 // TODO: update
 /// Equal by value
-static bool matEq(Matrix a, Matrix b) {
-    if (a.cols != b.cols || a.rows != b.rows) {
+bool matEq(Matrix a, Matrix b) {
+    if (a.cols != b.cols || a.rows != b.rows || a.cs != b.cs || a.rs != b.rs) {
         return false;
     }
 
-    for (int i = 0; i < a.rows * a.cols; i++) {
-        if (!FLOAT_EQ(a.data[i], b.data[i])) {
-            return false;
+    for (int i = 0; i < a.rows; i++) {
+        for (int j = 0; j < a.cols; j++) {
+            int idx = i * a.rs + j * a.rs;
+            if (!FLOAT_EQ(a.data[idx], b.data[idx])) {
+                return false;
+            }
         }
     }
     return true;
@@ -77,6 +81,8 @@ Matrix matCreateRaw(float *data, unsigned int rows, unsigned int cols) {
     return (Matrix){
         .rows = (int)rows,
         .cols = (int)cols,
+        .rs = cols,
+        .cs = 1,
         .data = data,
     };
 }
@@ -145,7 +151,7 @@ int matMul(Matrix *out, Matrix a, Matrix b) {
             out->data[i * out->cols + j] = 0;
             for (int k = 0; k < a.cols; k++) {
                 out->data[i * out->cols + j] +=
-                    a.data[i * a.cols + k] * b.data[k * b.cols + j];
+                    a.data[i * a.rs + k * a.cs] * b.data[k * b.rs + j * b.cs];
             }
         }
     }
@@ -194,11 +200,9 @@ int matTranspose(Matrix *out, Matrix a) {
     ASSERT(out->cols == a.rows && out->rows == a.cols,
            "out size does not match a size");
 
-    for (int i = 0; i < a.rows; i++) {
-        for (int j = 0; j < a.cols; j++) {
-            out->data[j * out->cols + i] = a.data[i * a.cols + j];
-        }
-    }
+    out->cs = a.rs;
+    out->rs = a.cs;
+    out-> data = a.data;
 
     return 0;
 }
@@ -304,6 +308,7 @@ int matSoftMax(Matrix *out, Matrix a) {
 }
 
 void matDebug(Matrix mat) {
+    printf("Matrix (rows: %d, cols: %d, rs: %d, cs: %d):\n", mat.rows, mat.cols, mat.rs, mat.cs);
     for (int i = 0; i < mat.rows; i += 1) {
         for (int j = 0; j < mat.cols; j += 1) {
             printf("%5.1f ", mat.data[i * mat.cols + j]);

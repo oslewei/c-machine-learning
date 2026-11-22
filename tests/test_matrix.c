@@ -8,6 +8,8 @@ TEST(matrix_multiply) {
     Matrix a = (Matrix){
         .rows = 4,
         .cols = 3,
+        .rs = 3,
+        .cs = 1,
         .data = (float[]){
             1.0, 2.0, 3.0,
             4.0, 5.0, 6.0,
@@ -18,6 +20,8 @@ TEST(matrix_multiply) {
     Matrix b = (Matrix){
         .rows = 3,
         .cols = 4,
+        .rs = 4,
+        .cs = 1,
         .data = (float[]){
             12.0, 11.0, 10.0, 9.0,
             8.0, 7.0, 6.0, 5.0,
@@ -50,6 +54,8 @@ TEST(matrix_multiply_identity) {
     Matrix id = (Matrix){
         .rows = 3,
         .cols = 3,
+        .rs = 3,
+        .cs = 1,
         .data = (float[9]){
             1.0, 0.0, 0.0,
             0.0, 1.0, 0.0,
@@ -59,6 +65,8 @@ TEST(matrix_multiply_identity) {
     Matrix out = (Matrix){
         .cols = 3,
         .rows = 3,
+        .rs = 3,
+        .cs = 1,
         .data = (float[9]){},
     };
 
@@ -73,6 +81,8 @@ TEST(matrix_trasnspose) {
     Matrix a = (Matrix){
         .rows = 4,
         .cols = 3,
+        .rs = 3,
+        .cs = 1,
         .data = (float[]){
             1.0, 2.0, 3.0,
             4.0, 5.0, 6.0,
@@ -86,13 +96,16 @@ TEST(matrix_trasnspose) {
         .data = (float[12]){},
     };
 
-    Matrix expected = (Matrix) {
+    Matrix expected = (Matrix){
         .rows = 3,
         .cols = 4,
+        .rs = 1,
+        .cs = 3,
         .data = (float[]){
-            1.0, 4.0, 7.0, 10.0,
-            2.0, 5.0, 8.0, 11.0,
-            3.0, 6.0, 9.0, 12.0
+            1.0, 2.0, 3.0,
+            4.0, 5.0, 6.0,
+            7.0, 8.0, 9.0,
+            10.0, 11.0, 12.0
         },
     };
 
