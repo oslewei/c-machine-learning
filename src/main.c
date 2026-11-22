@@ -277,6 +277,7 @@ int main(int argc, char *argv[]) {
                 }
             }
             total_correct += (max_idx == (int)label);
+            arenaReset(&batch_arena);
         }
         float accuracy = (float)total_correct / (float)test_images.num_images;
         accuracies[epoch] = accuracy;

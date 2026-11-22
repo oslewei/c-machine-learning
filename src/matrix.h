@@ -96,7 +96,6 @@ void matDebug(Matrix a);
 #include <string.h>
 
 Matrix matCreateRaw(float *data, unsigned int rows, unsigned int cols) {
-    LOG("Created Matrix of size: (%ud, %ud)", rows, cols);
     if (data == NULL) {
         return (Matrix){0};
     }
@@ -202,7 +201,7 @@ void matMulInto(Matrix *out, Matrix a, Matrix b) {
     ASSERT(out->rows == a.rows && out->cols == b.cols,
            "the out size does not match");
 
-    MAT_FOREACH(a, i, j) {
+    MAT_FOREACH(*out, i, j) {
         MAT_AT(*out, i, j) = 0;
         for (int k = 0; k < a.cols; k++) {
             MAT_AT(*out, i, j) += MAT_AT(a, i, k) * MAT_AT(b, k, j);

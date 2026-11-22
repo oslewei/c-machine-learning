@@ -245,7 +245,7 @@ static int nnAddGradientsToNetwork(NeuralNetwork *network, NeuralNetwork *gradie
 static int nnBackward(NeuralNetwork *network, NeuralNetwork *gradients, Matrix target, Arena *arena) {
     // output after soft max
     Matrix out = network->layers[network->num_layers-1].a;
-    if (target.rows != out.rows && target.cols != out.cols) return 1;
+    if (target.rows != out.rows || target.cols != out.cols) return 1;
 
     // focus on the weighs first, the array  of errors
     Matrix *ds = (Matrix *)arenaAlloc(arena, sizeof(Matrix)*network->num_layers);
@@ -259,13 +259,7 @@ static int nnBackward(NeuralNetwork *network, NeuralNetwork *gradients, Matrix t
         Layer *layer = &network->layers[l];
         Layer *next_layer = &network->layers[l+1];
 
-        Matrix wT = matArenaCreate(arena, next_layer->weights.cols, next_layer->weights.rows);
-        if (wT.data == NULL) {
-            printf("Could not create\n");
-            return 1;
-        }
-
-        wT = matTransposeView(next_layer->weights);
+        Matrix wT = matTransposeView(next_layer->weights);
 
         Matrix templ = matArenaCreate(arena, wT.rows, ds[l+1].cols);
         matMulInto(&templ, wT, ds[l+1]);
