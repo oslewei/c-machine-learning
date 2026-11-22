@@ -14,23 +14,20 @@ all: build-main
 run: build-main
 	./$(BUILD)/main
 
-build-main: $(SRCS) | $(BUILD)
-	gcc $(CFLAGS) -fsanitize=address -o $(BUILD)/main src/main.c $(LIBS)
-
 train: build-train
 	./$(BUILD)/train
 
 test: build-test
 	./$(BUILD)/test
 
+build-main: $(SRCS) | $(BUILD)
+	gcc $(CFLAGS) -fsanitize=address -o $(BUILD)/main src/main.c $(LIBS)
+
 build-train: $(SRCS) | $(BUILD)
 	gcc $(CFLAGS) -O3 -ffast-math -march=native -o $(BUILD)/train src/main.c $(LIBS)
 
 build-cblas: $(SRCS) | $(BUILD)
 	gcc $(CFLAGS) -O3 -ffast-math -march=native -DUSE_OPENBLAS -o $(BUILD)/cblas src/main.c $(LIBS) -lopenblas
-
-test: build-test
-	./$(BUILD)/test
 
 # Make this  more dynamic  wht the files
 build-test: $(TEST_FILES) | $(BUILD)

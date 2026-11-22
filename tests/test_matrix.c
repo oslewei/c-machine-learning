@@ -1,3 +1,5 @@
+/// Does not test everything, mainly tests the tranpso se and multiply for now
+
 #include "test.h"
 #define MATRIX_IMPLEMENTATION
 #include "matrix.h"
