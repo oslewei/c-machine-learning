@@ -142,18 +142,37 @@ Matrix matArenaDupe(Arena *arena, Matrix a) {
     return ret;
 }
 
-Matrix matMul(Arena *arena, Matrix a, Matrix b) {
-    Matrix out = matArenaCreate(arena, a.rows, b.cols);
+Matrix matPack(Arena *arena, Matrix a) {
+    // so its not packed or in the standard way for cblas specifically
+    if (a.cs != 1 || a.rs != a.cols) {
+        Matrix out = matArenaCreate(arena, a.rows, a.cols);
+        for (int i = 0; i < a.rows; i++) {
+            for (int j = 0; j < a.cols; j++) {
+                out.data[i * out.rs + j * out.cs] = a.data[i * a.rs + j * a.cs];
+            }
+        }
+        return out;
+    }
 
-    matMulInto(&out, a, b);
-
-    return out;
+    // if not its an identity
+    return a;
 }
 
 // #define USE_OPENBLAS
 #ifdef USE_OPENBLAS
 
 #include <cblas.h>
+
+Matrix matMul(Arena *arena, Matrix a, Matrix b) {
+    Matrix out = matArenaCreate(arena, a.rows, b.cols);
+
+    Matrix a = matPack(arena, a);
+    Matrix b = matPack(arena, b);
+
+    matMulInto(&out, a, b);
+
+    return out;
+}
 
 // using cblas
 void matMulInto(Matrix *out, Matrix a, Matrix b) {
@@ -167,6 +186,14 @@ void matMulInto(Matrix *out, Matrix a, Matrix b) {
 }
 
 #else
+
+Matrix matMul(Arena *arena, Matrix a, Matrix b) {
+    Matrix out = matArenaCreate(arena, a.rows, b.cols);
+
+    matMulInto(&out, a, b);
+
+    return out;
+}
 
 // out should be initialized to the right size
 void matMulInto(Matrix *out, Matrix a, Matrix b) {
@@ -242,13 +269,8 @@ void matSubInto(Matrix *out, Matrix a, Matrix b) {
 }
 
 Matrix matTransposeView(Matrix a) {
-    Matrix out = (Matrix) {
-        .rows = a.cols,
-        .cols = a.rows,
-        .cs = a.rs,
-        .rs = a.cs,
-        .data = a.data
-    };
+    Matrix out = (Matrix){
+        .rows = a.cols, .cols = a.rows, .cs = a.rs, .rs = a.cs, .data = a.data};
     return out;
 }
 

@@ -5,3 +5,4 @@ CompileFlags:
     - -Wall
     - -I../src
     - -I./src
+    - -lcblas
