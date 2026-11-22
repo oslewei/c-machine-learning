@@ -45,12 +45,15 @@ Matrix matArenaCreate(Arena *arena, unsigned int rows, unsigned int cols);
 Matrix matArenaDupe(Arena *arena, Matrix a);
 void matZero(Matrix *a);
 
+// Views -------------
+
+Matrix matTransposeView(Matrix a);
+
 // Allocating -----------
 Matrix matMul(Arena *arena, Matrix a, Matrix b);
 Matrix matScale(Arena *arena, Matrix a, float r);
 Matrix matAdd(Arena *arena, Matrix a, Matrix b);
 Matrix matSub(Arena *arena, Matrix a, Matrix b);
-Matrix matTranspose(Arena *arena, Matrix a);
 // [a, b]prod[d, e] = [a*d, b*e]
 Matrix matProduct(Arena *arena, Matrix a, Matrix b);
 Matrix matDiv(Arena *arena, Matrix a, Matrix b);
@@ -65,10 +68,9 @@ Matrix matReLuDer(Arena *arena, Matrix a);
 
 // Non-allocating -----------
 void matMulInto(Matrix *out, Matrix a, Matrix b);
-void matScaleInto(Matrix *out, Matrix a, float r);
+void matScaleInto(Matrix *out, Matrix a, float b);
 void matAddInto(Matrix *out, Matrix a, Matrix b);
 void matSubInto(Matrix *out, Matrix a, Matrix b);
-void matTransposeInto(Matrix *out, Matrix a);
 // [a, b]prod[d, e] = [a*d, b*e]
 void matProductInto(Matrix *out, Matrix a, Matrix b);
 void matDivInto(Matrix *out, Matrix a, Matrix b);
@@ -120,6 +122,7 @@ void matDestroy(Matrix *a) {
 
 Matrix matArenaCreate(Arena *arena, unsigned int rows, unsigned int cols) {
     float *data = (float *)arenaAlloc(arena, rows * cols * sizeof(float));
+    ASSERT(data != NULL, "The allocation failed");
 
     return matCreateRaw(data, rows, cols);
 }
@@ -137,6 +140,14 @@ Matrix matArenaDupe(Arena *arena, Matrix a) {
 
     memcpy(ret.data, a.data, a.rows * a.cols * sizeof(float));
     return ret;
+}
+
+Matrix matMul(Arena *arena, Matrix a, Matrix b) {
+    Matrix out = matArenaCreate(arena, a.rows, b.cols);
+
+    matMulInto(&out, a, b);
+
+    return out;
 }
 
 // #define USE_OPENBLAS
@@ -176,6 +187,14 @@ void matMulInto(Matrix *out, Matrix a, Matrix b) {
 
 #endif // USE_OPENBLAS
 
+Matrix matScale(Arena *arena, Matrix a, float b) {
+    Matrix out = matArenaCreate(arena, a.rows, a.cols);
+
+    matScaleInto(&out, a, b);
+
+    return out;
+}
+
 void matScaleInto(Matrix *out, Matrix a, float b) {
     ASSERT(out->cols == a.cols && out->rows == a.rows,
            "out size does not match a size");
@@ -183,6 +202,14 @@ void matScaleInto(Matrix *out, Matrix a, float b) {
     for (int i = 0; i < a.cols * a.rows; i++) {
         out->data[i] = b * a.data[i];
     }
+}
+
+Matrix matAdd(Arena *arena, Matrix a, Matrix b) {
+    Matrix out = matArenaCreate(arena, a.rows, a.cols);
+
+    matAddInto(&out, a, b);
+
+    return out;
 }
 
 void matAddInto(Matrix *out, Matrix a, Matrix b) {
@@ -196,6 +223,14 @@ void matAddInto(Matrix *out, Matrix a, Matrix b) {
     }
 }
 
+Matrix matSub(Arena *arena, Matrix a, Matrix b) {
+    Matrix out = matArenaCreate(arena, a.rows, a.cols);
+
+    matSubInto(&out, a, b);
+
+    return out;
+}
+
 void matSubInto(Matrix *out, Matrix a, Matrix b) {
     ASSERT(out->cols == a.cols && out->rows == a.rows,
            "out size does not match a size");
@@ -206,13 +241,23 @@ void matSubInto(Matrix *out, Matrix a, Matrix b) {
     }
 }
 
-void matTransposeInto(Matrix *out, Matrix a) {
-    ASSERT(out->cols == a.rows && out->rows == a.cols,
-           "out size does not match a size");
+Matrix matTransposeView(Matrix a) {
+    Matrix out = (Matrix) {
+        .rows = a.cols,
+        .cols = a.rows,
+        .cs = a.rs,
+        .rs = a.cs,
+        .data = a.data
+    };
+    return out;
+}
 
-    out->cs = a.rs;
-    out->rs = a.cs;
-    out-> data = a.data;
+Matrix matProduct(Arena *arena, Matrix a, Matrix b) {
+    Matrix out = matArenaCreate(arena, a.rows, a.cols);
+
+    matProductInto(&out, a, b);
+
+    return out;
 }
 
 void matProductInto(Matrix *out, Matrix a, Matrix b) {
@@ -224,6 +269,14 @@ void matProductInto(Matrix *out, Matrix a, Matrix b) {
     for (int i = 0; i < a.rows * a.cols; i++) {
         out->data[i] = a.data[i] * b.data[i];
     }
+}
+
+Matrix matDiv(Arena *arena, Matrix a, Matrix b) {
+    Matrix out = matArenaCreate(arena, a.rows, a.cols);
+
+    matDivInto(&out, a, b);
+
+    return out;
 }
 
 void matDivInto(Matrix *out, Matrix a, Matrix b) {
@@ -238,9 +291,16 @@ void matDivInto(Matrix *out, Matrix a, Matrix b) {
 }
 
 void matZero(Matrix *a) {
-    ASSERT(a->data == NULL,
-           "a is unallocated");
+    ASSERT(a->data == NULL, "a is unallocated");
     memset(a->data, 0, a->rows * a->cols * sizeof(float));
+}
+
+Matrix matSqrt(Arena *arena, Matrix a) {
+    Matrix out = matArenaCreate(arena, a.rows, a.cols);
+
+    matSqrtInto(&out, a);
+
+    return out;
 }
 
 void matSqrtInto(Matrix *out, Matrix a) {
@@ -252,6 +312,14 @@ void matSqrtInto(Matrix *out, Matrix a) {
     }
 }
 
+Matrix matAddScalar(Arena *arena, Matrix a, float r) {
+    Matrix out = matArenaCreate(arena, a.rows, a.cols);
+
+    matAddScalarInto(&out, a, r);
+
+    return out;
+}
+
 void matAddScalarInto(Matrix *out, Matrix a, float r) {
     ASSERT(out->cols == a.cols && out->rows == a.rows,
            "out size does not match a size");
@@ -259,6 +327,14 @@ void matAddScalarInto(Matrix *out, Matrix a, float r) {
     for (int i = 0; i < a.rows * a.cols; i++) {
         out->data[i] = a.data[i] + r;
     }
+}
+
+Matrix matReLu(Arena *arena, Matrix a) {
+    Matrix out = matArenaCreate(arena, a.rows, a.cols);
+
+    matReLuInto(&out, a);
+
+    return out;
 }
 
 void matReLuInto(Matrix *out, Matrix a) {
@@ -270,6 +346,14 @@ void matReLuInto(Matrix *out, Matrix a) {
     }
 }
 
+Matrix matReLuDer(Arena *arena, Matrix a) {
+    Matrix out = matArenaCreate(arena, a.rows, a.cols);
+
+    matReLuDerInto(&out, a);
+
+    return out;
+}
+
 void matReLuDerInto(Matrix *out, Matrix a) {
     ASSERT(out->cols == a.cols && out->rows == a.rows,
            "out size does not match a size");
@@ -277,6 +361,14 @@ void matReLuDerInto(Matrix *out, Matrix a) {
     for (int i = 0; i < a.rows * a.cols; i++) {
         out->data[i] = (a.data[i] > 0) ? 1 : 0;
     }
+}
+
+Matrix matSoftMax(Arena *arena, Matrix a) {
+    Matrix out = matArenaCreate(arena, a.rows, a.cols);
+
+    matSoftMaxInto(&out, a);
+
+    return out;
 }
 
 void matSoftMaxInto(Matrix *out, Matrix a) {
@@ -302,7 +394,8 @@ void matSoftMaxInto(Matrix *out, Matrix a) {
 }
 
 void matDebug(Matrix mat) {
-    printf("Matrix (rows: %d, cols: %d, rs: %d, cs: %d):\n", mat.rows, mat.cols, mat.rs, mat.cs);
+    printf("Matrix (rows: %d, cols: %d, rs: %d, cs: %d):\n", mat.rows, mat.cols,
+           mat.rs, mat.cs);
     for (int i = 0; i < mat.rows; i += 1) {
         for (int j = 0; j < mat.cols; j += 1) {
             printf("%5.1f ", mat.data[i * mat.cols + j]);

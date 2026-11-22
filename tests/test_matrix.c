@@ -41,7 +41,7 @@ TEST(matrix_multiply) {
         256.0, 223.0, 190.0, 157.0
     };
 
-    matMul(&out, a, b);
+    matMulInto(&out, a, b);
 
     for (int j = 0; j < out.rows; j++) {
         for (int i = 0; i < out.cols; i++) {
@@ -70,7 +70,7 @@ TEST(matrix_multiply_identity) {
         .data = (float[9]){},
     };
 
-    matMul(&out, id, id);
+    matMulInto(&out, id, id);
 
     for (int i = 0; i < 9; i++) {
         EXPECT(FLOAT_EQ(out.data[i], id.data[i]))
@@ -90,11 +90,6 @@ TEST(matrix_trasnspose) {
             10.0, 11.0, 12.0
         },
     };
-    Matrix out = (Matrix){
-        .rows = 3,
-        .cols = 4,
-        .data = (float[12]){},
-    };
 
     Matrix expected = (Matrix){
         .rows = 3,
@@ -109,7 +104,7 @@ TEST(matrix_trasnspose) {
         },
     };
 
-    matTranspose(&out, a);
+    Matrix out = matTransposeView(a);
 
     EXPECT(matEq(expected, out))
 }
